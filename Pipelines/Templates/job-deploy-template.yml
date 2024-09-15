@@ -1,0 +1,44 @@
+stages:
+ - stage: Deploy
+   jobs:
+   - job: Deployment
+     displayName: Deploy to Azure
+
+     steps:
+        
+        - task: DownloadBuildArtifacts@1
+          inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'drop'
+              downloadPath: '$(Build.ArtifactStagingDirectory)'
+
+        - task: AzureRmWebAppDeployment@4
+          inputs:
+            ConnectionType: 'AzureRM'
+            azureSubscription: 'SamfancyConnection'
+            appType: 'webApp'
+            WebAppName: $(appName)
+            packageForLinux: '$(Build.ArtifactStagingDirectory)/drop/WebApp'
+            JSONFiles: '**/appsettings.json'
+        
+        - task: DownloadBuildArtifacts@1
+          inputs:
+              buildType: 'current'
+              downloadType: 'single'
+              artifactName: 'dacpac'
+              itemPatten: '**/*.dacpac'
+              downloadPath: '$(Build.ArtifactStagingDirectory)'
+        
+        - task: SqlAzureDacpacDeployment@01
+          displayName: Deploy Dacpac to SQL Azure
+          inputs:
+            azureSubscription: 'SamfancyConnection'
+            AuthenticationType: 'server'
+            ServerName: 'samfancyapp-server.database.windows.net'
+            DatabaseName: 'samfancyapp-database'
+            SqlUserName: 'samfancyapp-server-admin'
+            SqlPassword: '8Kg8cZKcbh$MOSIO'
+            DacpacFile: '$(Build.ArtifactStagingDirectory)/dacpac/WebApp.Database.dacpac'
+            IpDetectionMethod: 'AutoDetect'
+        

@@ -1,0 +1,57 @@
+trigger:
+  - 'none'
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+- group: may-class-group-azure
+
+stages:
+  - stage: build
+    displayName: Build web application 
+    jobs:
+      - template: 'Templates/job-build-template.yml'
+
+      - job: Database 
+        displayName: Build Database
+        pool:
+         vmImage: window-2019
+        
+        steps:
+        - task: MSBuild@01
+          displayName: Build web database
+          inputs:
+            solution: WebApp.Database/WebApp.Database.sqlproj
+            msbuildArguments: '/p:OutDir=$(Build.ArtifactStagingDirectory)'
+       
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish Artifact Dacpac'
+          inputs:
+            ArtifactName: dacpac
+
+      - job: Selenium
+        displayName: Build UI Tests
+
+        steps:
+        - task: NuGetToolInstaller@0
+          displayName: Use Nuget
+        
+        - task: NuGetCommand@2
+          displayName: Restore Nuget Package
+          inputs:
+            restoreSolution: WebAppWithDatabase.sln
+        
+        - task: MSBuild@01
+          displayName: Build Selenium project
+          inputs:
+           solution: SeleniumUiTests/SeleniumUiTests.csproj
+           msbuildArguments: '/p:OutDir=$(Build.ArtifactStagingDirectory)'
+      
+        - task: PublishBuildArtifacts@1
+          displayName: 'Publish Artifact UI-Test'
+          inputs:
+            ArtifactName: Selenium UI
+  
+  
+  - template: Templates/job-deploy-template.yml

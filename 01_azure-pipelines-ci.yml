@@ -1,0 +1,77 @@
+trigger: 'none' # will disable CI builds entirely
+
+pool:
+  vmImage: 'windows-latest'
+    
+variables:
+  BuildConfiguration: release
+  
+stages:
+ - stage: BuildStage
+   jobs:
+    - job: Build
+      displayName: Build App
+      steps:
+
+      - task: UseDotNet@2
+        displayName: Install .NET 7 sdk
+        inputs:
+          packageType: sdk
+          version: 7.0.x
+          installationPath: $(Agent.ToolsDirectory)/dotnet
+
+      - task: DotNetCoreCLI@2
+        displayName: Restore Nuget Packages
+        inputs:
+          command: restore
+          projects: '**/WebApp.csproj'
+
+      - task: DotNetCoreCLI@2
+        displayName: Build Web App
+        inputs:
+          command: build
+          projects: '**/WebApp.csproj'
+          arguments: '--configuration $(BuildConfiguration)'
+
+      - task: DotNetCoreCLI@2
+        displayName: Run Unit Tests
+        inputs:
+          command: test
+          projects: '**/*UnitTest*.csproj'
+          arguments: '--configuration $(BuildConfiguration)'
+
+      - task: DotNetCoreCLI@2
+        displayName: Create Web App Package (.zip)
+        inputs:
+          command: publish
+          publishWebProjects: True
+          arguments: '--configuration $(BuildConfiguration) --output $(build.artifactstagingdirectory)'
+          zipAfterPublish: false
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Artifact (WebApp.zip)'
+        inputs:
+          PathtoPublish: '$(build.artifactstagingdirectory)'
+
+ - stage: Deploy
+   jobs:
+    - job: Deployment
+      displayName: Deployment to Azure
+      steps:
+      
+      - task: DownloadBuildArtifacts@1
+        inputs:
+            buildType: 'current'
+            downloadType: 'single'
+            artifactName: 'drop'
+            downloadPath: '$(Build.ArtifactStagingDirectory)'
+
+      - task: AzureRmWebAppDeployment@4
+        inputs:
+          ConnectionType: 'AzureRM'
+          azureSubscription: 'SamfancyConnection'
+          appType: 'webApp'
+          WebAppName: 'samfancyapp'
+          packageForLinux: '$(Build.ArtifactStagingDirectory)/drop/WebApp'
+
+       
