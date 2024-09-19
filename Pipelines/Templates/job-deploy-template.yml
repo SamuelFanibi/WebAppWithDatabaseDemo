@@ -38,7 +38,9 @@ stages:
             ServerName: 'samfancyapp-server.database.windows.net'
             DatabaseName: 'samfancyapp-database'
             SqlUserName: 'samfancyapp-server-admin'
-            SqlPassword: '8Kg8cZKcbh$MOSIO'
+            SqlPassword: 'vxwLjOvTQ$JMsRjW'
+            deployType: 'DacpacTask'
+            DeploymentAction: 'Publish'
             DacpacFile: '$(Build.ArtifactStagingDirectory)/dacpac/WebApp.Database.dacpac'
             IpDetectionMethod: 'AutoDetect'
         
