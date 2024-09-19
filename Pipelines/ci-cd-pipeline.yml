@@ -16,10 +16,10 @@ stages:
       - job: Database 
         displayName: Build Database
         pool:
-         vmImage: window-2019
+         vmImage: windows-latest
         
         steps:
-        - task: MSBuild@01
+        - task: MSBuild@1
           displayName: Build web database
           inputs:
             solution: WebApp.Database/WebApp.Database.sqlproj
